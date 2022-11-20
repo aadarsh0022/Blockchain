@@ -1,43 +1,42 @@
-pragma solidity >=0.4.22 <0.7.0;
-contract banking{
-mapping(address=>uint) public userAccount;
-mapping(address=>bool) public userExists;
-function createAcc() public payable returns(string memory){
-require(userExists[msg.sender]==false,'Account Already Created');
-if(msg.value==0){
-userAccount[msg.sender]=0;
-userExists[msg.sender]=true;
-return 'account created';
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.4.16 <0.9.0;
+contract Bank {
+address public owner = msg.sender;
+mapping(address => uint256) private userbalance;
+constructor() {
+owner = msg.sender;
 }
-require(userExists[msg.sender]==false,'account already created');
-userAccount[msg.sender] = msg.value;
-userExists[msg.sender] = true;
-return 'account created';
+modifier onlyOwner() {
+require(msg.sender == owner, "You are not the owner of this contract");
+_;
 }
-function deposit(uint amount) public payable returns(string memory){
-require(userExists[msg.sender]==true, 'Account is not created');
-require(amount>0, 'Value for deposit is Zero');
-userAccount[msg.sender]=userAccount[msg.sender]+amount;
-return 'Deposited Succesfully';
+function deposit() public payable returns (bool) {
+require(msg.value > 10 wei, "Please Deposit at least 10 wei");
+userbalance[msg.sender] += msg.value;
+return true;
 }
-function withdraw(uint amount) public payable returns(string memory){
-require(userAccount[msg.sender]>amount, 'insufficeint balance in Bank
-account');
-require(userExists[msg.sender]==true, 'Account is not created');
-require(amount>0, 'Enter non-zero value for withdrawal');
-userAccount[msg.sender]=userAccount[msg.sender]-amount;
-msg.sender.transfer(amount);
-return 'withdrawal Succesful';
+function withdraw(uint256 _amount) public payable returns (bool) {
+require(
+_amount <= userbalance[msg.sender],
+"You dont have sufficient funds!"
+);
+userbalance[msg.sender] -= _amount;
+payable(msg.sender).transfer(_amount);
+return true;
 }
-function TransferAmount(address payable userAddress, uint amount) public
-returns(string memory){
-require(userAccount[msg.sender]>amount, 'insufficeint balance in Bank
-account');
-require(userExists[msg.sender]==true, 'Account is not created');
-require(userExists[userAddress]==true, 'to Transfer account does not
-exists in bank accounts ');
-require(amount>0, 'Enter non-zero value for sending');
-userAccount[msg.sender]=userAccount[msg.sender]-amount;
-userAccount[userAddress]=userAccount[userAddress]+amount;
-return 'transfer succesfully';
+function getBalance() public view returns (uint256) {
+return userbalance[msg.sender];
+}
+function getContractBalance() public view onlyOwner returns (uint256) {
+return address(this).balance;
+}
+function withdrawfunds(uint256 _amount)
+public
+payable
+onlyOwner
+returns (bool)
+{
+payable(owner).transfer(_amount);
+return true;
+}
 }
